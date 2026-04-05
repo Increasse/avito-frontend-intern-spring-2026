@@ -1,7 +1,7 @@
 import {useState, useEffect, useCallback, useRef} from 'react';
 import {useParams, useNavigate} from 'react-router-dom';
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
-import {ArrowLeft, Clock, AlertCircle, Lightbulb, TrendingUp, RefreshCw} from 'lucide-react';
+import {ArrowLeft, Clock, AlertCircle, Lightbulb, TrendingUp, RefreshCw, MessageSquare} from 'lucide-react';
 import {itemsApi} from '../api/items';
 import {llmApi} from '../api/llm'
 import {Toast, type ToastType} from '../components/Toast';
@@ -12,6 +12,7 @@ import type {
     ElectronicsItemParams
 } from '../types';
 import {TipModalWindow} from "../components/TipModalWindow.tsx";
+import {AIChat} from "../components/AIChat.tsx";
 
 type FormData = {
     category: Category;
@@ -135,6 +136,8 @@ export default function AdEditPage() {
 
     const [descriptionResult, setDescriptionResult] = useState('');
     const [priceResult, setPriceResult] = useState('');
+
+    const [showChat, setShowChat] = useState(false);
 
     const improveDescriptionRef = useRef<HTMLButtonElement>(null);
     const suggestPriceRef = useRef<HTMLButtonElement>(null);
@@ -851,6 +854,14 @@ export default function AdEditPage() {
                 </form>
             </div>
 
+            <button
+                onClick={() => setShowChat(true)}
+                className="fixed bottom-8 right-6 shadow-md border border-[#FFA940] bg-[#F9F1E6] text-[#FFA940] text-[14px] rounded-lg py-2 px-4 hover:cursor-pointer hover:bg-[#f5e8d6] flex items-center gap-4 text-lg"
+            >
+                <MessageSquare className='w-5 h-5' />
+                Открыть чат с ИИ
+            </button>
+
             <TipModalWindow
                 isOpen={showDescriptionModal}
                 onClose={() => setShowDescriptionModal(false)}
@@ -875,6 +886,12 @@ export default function AdEditPage() {
                 showApplyButton={false}
                 anchorRef={suggestPriceRef}
                 type={modalType}
+            />
+
+            <AIChat
+                item={item}
+                isOpen={showChat}
+                onClose={() => setShowChat(false)}
             />
 
         </div>

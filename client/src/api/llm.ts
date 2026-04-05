@@ -1,5 +1,10 @@
-// src/api/llm.ts
 const OLLAMA_URL = 'http://localhost:11434/api/generate';
+const OLLAMA_CHAT_URL = 'http://localhost:11434/api/chat';
+
+export interface ChatMessage {
+    role: 'user' | 'assistant';
+    content: string;
+}
 
 export const llmApi = {
     improveDescription: async (item: any): Promise<string> => {
@@ -51,9 +56,12 @@ export const llmApi = {
 
             const data = await response.json();
             return data.response.trim();
-        } catch (error: any) {
+        } catch (error) {
+            const errorMessage = error instanceof Error
+                ? error.message
+                : 'Не удалось подключиться к Ollama.';
             console.error('Ollama Error:', error);
-            throw new Error('Не удалось подключиться к Ollama. Убедись, что Ollama запущен (ollama serve).');
+            throw new Error(errorMessage);
         }
     },
 
@@ -112,9 +120,78 @@ export const llmApi = {
 
             const data = await response.json();
             return data.response.trim();
-        } catch (error: any) {
+        } catch (error) {
+            const errorMessage = error instanceof Error
+                ? error.message
+                : 'Не удалось получить рекомендацию цены от Ollama';
             console.error('Ollama Error:', error);
-            throw new Error('Не удалось получить рекомендацию цены от Ollama');
+            throw new Error(errorMessage);
+        }
+    },
+
+    chatWithUser: async (item: any, userMessage: string, chatHistory: ChatMessage[] = []): Promise<string> => {
+        // Формируем системный промпт с контекстом объявления
+        const systemPrompt = `
+            Ты — AI-ассистент продавца на Avito. Ты отвечаешь на вопросы о товаре.
+            
+            Пользователь предоставил информацию о товаре:
+            Категория: ${item.category}
+            Название: ${item.title}
+            Текущая цена продавца: ${item.price} ₽
+            Характеристики: ${JSON.stringify(item.params, null, 2)}
+            Описание: ${item.description || 'Нет описания'}
+            
+            Правила общения:
+            1. Отвечай дружелюбно и профессионально
+            2. Давай конкретные, полезные советы
+            3. Если спрашивают о цене — аргументируй рекомендации
+            4. Если спрашивают о характеристиках — объясняй, какие лучше указать
+            5. Не выдумывай характеристики, которых нет в описании
+            6. Отвечай кратко и по делу (2-4 предложения)
+            7. Используй русский язык
+            8. Не используй эмодзи
+            9. Ты — ассистент продавца, помогай ему продать товар быстрее и дороже
+            
+            Примеры ответов:
+            - Вопрос: "Какую цену поставить?" → "Учитывая состояние и характеристики, рекомендую цену в диапазоне 115 000–135 000 ₽. Это среднерыночная цена для вашей модели."
+            - Вопрос: "Что добавить в описание?" → "Добавьте информацию о состоянии батареи, комплектации и причинах продажи — это повышает доверие покупателей."
+            - Вопрос: "Почему никто не пишет?" → "Возможно, цена немного завышена или не хватает ключевых характеристик. Укажите пробег (для авто) или состояние (для электроники)."
+            
+            Теперь ответь на вопрос пользователя, учитывая контекст объявления.
+        `;
+
+        // Формируем историю сообщений для Ollama
+        const messages = [
+            { role: 'system', content: systemPrompt },
+            ...chatHistory.map(msg => ({ role: msg.role, content: msg.content })),
+            { role: 'user', content: userMessage }
+        ];
+
+        try {
+            const response = await fetch(OLLAMA_CHAT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: 'llama3.2',
+                    messages: messages,
+                    stream: false,
+                    temperature: 0.7,
+                    max_tokens: 500,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Ollama вернул ошибку: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.message.content.trim();
+        } catch (error) {
+            const errorMessage = error instanceof Error
+                ? error.message
+                : 'Не удалось подключиться к Ollama.';
+            console.error('Ollama Chat Error:', error);
+            throw new Error(errorMessage);
         }
     },
 };

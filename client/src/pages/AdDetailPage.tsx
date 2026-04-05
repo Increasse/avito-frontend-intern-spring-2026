@@ -205,7 +205,7 @@ export default function AdDetailPage() {
                         <span className='text-[16px]'>Редактировать</span>
                         <Edit3 className="w-4 h-4"/>
                     </button>
-                    <div className='flex sm:mt-4 mt-4 sm:flex-row flex-col sm:text-end'>
+                    <div className='flex sm:mt-4 mt-4 flex-col sm:text-end'>
                         <span>Опубликовано: {formatDate(item.createdAt)}</span>
                         <span>Отредактировано: {formatDate(item.updatedAt)}</span>
                     </div>
@@ -263,7 +263,7 @@ export default function AdDetailPage() {
                                             key={index}
                                             onClick={() => setCurrentImageIndex(index)}
                                             className={`
-                                                shrink-0 w-24 h-24 rounded-lg overflow-hidden
+                                                shrink-0 sm:w-24 sm:h-24 w-16 h-16 rounded-lg overflow-hidden
                                                 border-2 transition-all duration-200
                                                 ${currentImageIndex === index
                                                     ? 'border-blue-500'
